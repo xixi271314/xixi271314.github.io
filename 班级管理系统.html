@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>班级事务管理系统 · 双角色完整版 · 公费师范生作品</title>
+    <!-- Tailwind CSS + Font Awesome -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .role-tab {
+            transition: all 0.2s ease;
+        }
+        .role-tab.active {
+            border-bottom: 3px solid #3b82f6;
+            color: #1e40af;
+            font-weight: 600;
+        }
+        /* 双击提示 */
+        [data-password-field] {
+            cursor: pointer;
+        }
+        [data-password-field]:hover {
+            background-color: #fef3c7;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans antialiased">
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- 头部：角色切换 -->
+        <div class="bg-white rounded-xl shadow-sm p-4 mb-6 flex flex-wrap items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-100 p-2 rounded-lg">
+                    <i class="fas fa-users-cog text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">班级事务管理系统 <span class="text-sm font-normal text-gray-500 ml-2">学生端+教师端</span></h1>
+                    <p class="text-sm text-gray-500 flex items-center gap-2 mt-0.5">
+                        <i class="fas fa-graduation-cap text-blue-400"></i>
+                        <span>学生独立密码登录 · 教师统一管理 · 所有按钮均可点击</span>
+                    </p>
+                </div>
+            </div>
+            <!-- 角色切换按钮 -->
+            <div class="flex bg-gray-100 p-1 rounded-lg mt-3 sm:mt-0">
+                <button id="switchToStudent" class="role-tab px-6 py-2 rounded-md text-sm font-medium flex items-center gap-2" style="min-width: 100px;">
+                    <i class="fas fa-user-graduate"></i> 学生入口
+                </button>
+                <button id="switchToTeacher" class="role-tab px-6 py-2 rounded-md text-sm font-medium flex items-center gap-2" style="min-width: 100px;">
+                    <i class="fas fa-chalkboard-teacher"></i> 教师入口
+                </button>
+            </div>
+        </div>
+
+        <!-- 学生面板 -->
+        <div id="studentPanel" class="hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 左侧：登录卡 -->
+                <div class="lg:col-span-1 space-y-5">
+                    <div class="bg-white rounded-xl shadow-md p-5 border border-gray-100">
+                        <h2 class="text-lg font-semibold text-gray-700 flex items-center gap-2 border-b pb-3">
+                            <i class="fas fa-id-card text-green-600"></i> 学生身份验证
+                        </h2>
+                        <div class="mt-4 space-y-4">
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">选择你的姓名</label>
+                                <select id="studentLoginSelect" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm bg-white focus:ring-2 focus:ring-green-200">
+                                    <!-- 动态生成 -->
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-1">个人密码</label>
+                                <input type="password" id="studentPassword" placeholder="例如：123456" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-200">
+                                <p class="text-xs text-gray-400 mt-1"><i class="fas fa-info-circle"></i> 初始密码123456，教师可修改</p>
+                            </div>
+                            <button id="studentLoginBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 rounded-lg shadow-sm transition flex items-center justify-center gap-2">
+                                <i class="fas fa-sign-in-alt"></i> 进入我的作业
+                            </button>
+                            <div id="studentLoginMessage" class="text-xs text-red-500 h-4"></div>
+                        </div>
+                    </div>
+
+                    <!-- 已登录信息卡 -->
+                    <div id="loggedStudentCard" class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl shadow-md p-5 border border-green-100 hidden">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-green-200 p-2 rounded-full">
+                                <i class="fas fa-user-check text-green-700"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">当前登录</p>
+                                <p id="loggedStudentName" class="font-bold text-gray-800">--</p>
+                                <p id="loggedStudentId" class="text-xs text-gray-500">学号: --</p>
+                            </div>
+                        </div>
+                        <button id="studentLogoutBtn" class="mt-3 w-full bg-white border border-green-300 text-green-700 hover:bg-green-50 text-sm py-1.5 rounded-lg flex items-center justify-center gap-1">
+                            <i class="fas fa-sign-out-alt"></i> 退出登录
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 右侧：学生作业面板 -->
+                <div id="studentAssignmentPanel" class="lg:col-span-2 bg-white rounded-xl shadow-md border border-gray-200 hidden">
+                    <div class="bg-gradient-to-r from-green-50 to-blue-50 px-6 py-4 border-b flex flex-wrap items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-book-open text-green-600"></i>
+                            <h2 class="text-xl font-semibold text-gray-800">我的作业列表</h2>
+                        </div>
+                        <span id="studentWelcomeMsg" class="text-sm bg-white px-3 py-1 rounded-full shadow-sm"></span>
+                    </div>
+                    <div class="p-5">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-gray-100 text-gray-700">
+                                    <tr><th class="py-3 px-4 text-left">作业名称</th><th class="py-3 px-4 text-left">布置日期</th><th class="py-3 px-4 text-center">状态</th><th class="py-3 px-4 text-center">操作</th></tr>
+                                </thead>
+                                <tbody id="studentAssignmentTable" class="divide-y divide-gray-200"></tbody>
+                            </table>
+                        </div>
+                        <div class="mt-6 border-t pt-4">
+                            <h3 class="font-medium text-gray-700 flex items-center gap-1"><i class="fas fa-history"></i> 我的提交历史</h3>
+                            <div id="studentSubmissionHistory" class="mt-2 space-y-2 max-h-40 overflow-y-auto text-xs bg-gray-50 p-3 rounded"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 教师面板 -->
+        <div id="teacherPanel">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- 左侧：作业追踪 + 学生管理 -->
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
+                        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b flex flex-wrap items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-check-circle text-blue-600"></i>
+                                <h2 class="text-xl font-semibold text-gray-800">作业提交追踪 · 教师视图</h2>
+                            </div>
+                            <div class="flex items-center gap-2 mt-2 sm:mt-0">
+                                <select id="assignmentSelectTeacher" class="bg-white border border-gray-300 rounded-md text-sm px-3 py-1.5 focus:ring-2 focus:ring-blue-200"></select>
+                                <button id="addAssignmentTeacherBtn" class="bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-full w-7 h-7 flex items-center justify-center" title="新增作业">
+                                    <i class="fas fa-plus text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="p-5">
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full text-sm">
+                                    <thead class="bg-gray-100">
+                                        <tr>
+                                            <th class="py-2 px-3 text-left">学号</th>
+                                            <th class="py-2 px-3 text-left">姓名</th>
+                                            <th class="py-2 px-3 text-left">密码(双击修改)</th>
+                                            <th class="py-2 px-3 text-center" id="currentAssignmentHeaderTeacher">作业状态</th>
+                                            <th class="py-2 px-3 text-center">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="studentTableTeacher" class="divide-y divide-gray-200"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 添加学生表单 -->
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+                        <h3 class="text-md font-medium text-gray-700 mb-3 flex items-center gap-1"><i class="fas fa-user-plus"></i> 添加新学生</h3>
+                        <div class="flex flex-wrap items-end gap-3">
+                            <div><label class="block text-xs text-gray-500">姓名</label><input type="text" id="teacherNewName" placeholder="陈小雅" class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-36"></div>
+                            <div><label class="block text-xs text-gray-500">学号</label><input type="text" id="teacherNewId" placeholder="2024105" class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-36"></div>
+                            <div><label class="block text-xs text-gray-500">初始密码</label><input type="text" id="teacherNewPwd" value="123456" class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-32 bg-gray-50"></div>
+                            <button id="teacherAddStudentBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm flex items-center gap-1"><i class="fas fa-save"></i> 添加</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧：班级日志 + 统计 -->
+                <div class="space-y-6">
+                    <div class="bg-white rounded-xl shadow-md border border-gray-200">
+                        <div class="bg-gradient-to-r from-amber-50 to-yellow-50 px-5 py-4 border-b">
+                            <h2 class="text-lg font-semibold flex items-center gap-2"><i class="fas fa-clipboard-list text-amber-600"></i> 班级日志</h2>
+                        </div>
+                        <div class="p-4">
+                            <div class="mb-4 space-y-2">
+                                <input type="text" id="teacherLogTitle" placeholder="日志标题" class="w-full border rounded-lg px-3 py-2 text-sm">
+                                <textarea id="teacherLogContent" rows="2" placeholder="内容..." class="w-full border rounded-lg px-3 py-2 text-sm"></textarea>
+                                <div class="flex gap-2">
+                                    <input type="text" id="teacherLogAuthor" value="班主任" class="border rounded-lg px-3 py-2 text-sm w-28">
+                                    <button id="teacherAddLogBtn" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-1"><i class="fas fa-pen"></i>发布</button>
+                                </div>
+                            </div>
+                            <div id="teacherLogList" class="space-y-3 max-h-80 overflow-y-auto"></div>
+                        </div>
+                    </div>
+                    <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                        <h3 class="font-medium text-indigo-800 flex items-center gap-1"><i class="fas fa-chart-pie"></i> 当前作业统计</h3>
+                        <div id="quickStats" class="mt-2 text-sm text-indigo-900">加载中...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部 -->
+        <div class="mt-8 text-center text-gray-500 text-sm border-t pt-5 flex flex-wrap items-center justify-center gap-4">
+            <span><i class="fas fa-check-circle text-green-500"></i> 所有按钮均已修复，点击有效</span>
+            <span><i class="fas fa-key text-yellow-500"></i> 教师双击密码可修改</span>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ---------- 数据模型 ----------
+            const STORAGE_KEYS = {
+                STUDENTS: 'classManager_students_fixed',
+                ASSIGNMENTS: 'classManager_assignments_fixed',
+                LOGS: 'classManager_logs_fixed',
+                SUBMISSIONS: 'classManager_submissions_fixed',
+                CURRENT_ROLE: 'classManager_role_fixed',
+                CURRENT_STUDENT_ID: 'classManager_loggedStudentId_fixed',
+                TEACHER_ASST_INDEX: 'teacher_asst_index'
+            };
+
+            // 默认数据
+            const defaultStudents = [
+                { id: '2024101', name: '张子轩', password: '123456', status: {} },
+                { id: '2024102', name: '李雨桐', password: '123456', status: {} },
+                { id: '2024103', name: '王思睿', password: '123456', status: {} },
+                { id: '2024104', name: '陈小雅', password: '123456', status: {} },
+            ];
+            const defaultAssignments = [
+                { id: 'asst1', name: '数学练习册 P23-25', createDate: Date.now() - 86400000*2 },
+                { id: 'asst2', name: '语文作文《我的老师》', createDate: Date.now() - 86400000 },
+                { id: 'asst3', name: '英语单词听写', createDate: Date.now() },
+            ];
+            // 初始化状态
+            defaultStudents.forEach((student, idx) => {
+                student.status[defaultAssignments[0].id] = idx % 2 === 0 ? 'submitted' : 'pending';
+                student.status[defaultAssignments[1].id] = idx % 3 === 0 ? 'submitted' : 'pending';
+                student.status[defaultAssignments[2].id] = idx % 4 === 0 ? 'submitted' : 'pending';
+            });
+            const defaultLogs = [
+                { id: 'log1', title: '周一班会', content: '纪律强调', author: '班主任', timestamp: Date.now() - 86400000 },
+                { id: 'log2', title: '数学作业提醒', content: '练习册必做', author: '课代表', timestamp: Date.now() - 43200000 },
+            ];
+            const defaultSubmissions = [];
+
+            // 读取存储
+            function load(key, def) {
+                let stored = localStorage.getItem(key);
+                if (stored) try { return JSON.parse(stored); } catch(e) { return def; }
+                return def;
+            }
+
+            let students = load(STORAGE_KEYS.STUDENTS, defaultStudents);
+            let assignments = load(STORAGE_KEYS.ASSIGNMENTS, defaultAssignments);
+            let logs = load(STORAGE_KEYS.LOGS, defaultLogs);
+            let submissions = load(STORAGE_KEYS.SUBMISSIONS, defaultSubmissions);
+            let currentRole = load(STORAGE_KEYS.CURRENT_ROLE, 'teacher');
+            let currentStudentId = load(STORAGE_KEYS.CURRENT_STUDENT_ID, '');
+            let teacherAsstIndex = load(STORAGE_KEYS.TEACHER_ASST_INDEX, 0);
+
+            // 确保状态一致性
+            function ensureConsistency() {
+                if (!assignments.length) return;
+                students.forEach(s => {
+                    if (!s.status) s.status = {};
+                    assignments.forEach(a => {
+                        if (!s.status.hasOwnProperty(a.id)) s.status[a.id] = 'pending';
+                    });
+                });
+                if (teacherAsstIndex >= assignments.length) teacherAsstIndex = 0;
+                saveAll();
+            }
+            function saveAll() {
+                localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(students));
+                localStorage.setItem(STORAGE_KEYS.ASSIGNMENTS, JSON.stringify(assignments));
+                localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(logs));
+                localStorage.setItem(STORAGE_KEYS.SUBMISSIONS, JSON.stringify(submissions));
+                localStorage.setItem(STORAGE_KEYS.CURRENT_ROLE, currentRole);
+                localStorage.setItem(STORAGE_KEYS.CURRENT_STUDENT_ID, currentStudentId);
+                localStorage.setItem(STORAGE_KEYS.TEACHER_ASST_INDEX, teacherAsstIndex);
+            }
+            ensureConsistency();
+
+            // ---------- 全局DOM元素 ----------
+            const studentPanel = document.getElementById('studentPanel');
+            const teacherPanel = document.getElementById('teacherPanel');
+            const switchToStudent = document.getElementById('switchToStudent');
+            const switchToTeacher = document.getElementById('switchToTeacher');
+
+            // 学生端元素
+            const studentLoginSelect = document.getElementById('studentLoginSelect');
+            const studentPassword = document.getElementById('studentPassword');
+            const studentLoginBtn = document.getElementById('studentLoginBtn');
+            const studentLoginMessage = document.getElementById('studentLoginMessage');
+            const loggedStudentCard = document.getElementById('loggedStudentCard');
+            const loggedStudentName = document.getElementById('loggedStudentName');
+            const loggedStudentIdSpan = document.getElementById('loggedStudentId');
+            const studentAssignmentPanel = document.getElementById('studentAssignmentPanel');
+            const studentAssignmentTable = document.getElementById('studentAssignmentTable');
+            const studentWelcomeMsg = document.getElementById('studentWelcomeMsg');
+            const studentSubmissionHistory = document.getElementById('studentSubmissionHistory');
+            const studentLogoutBtn = document.getElementById('studentLogoutBtn');
+
+            // 教师端元素
+            const assignmentSelectTeacher = document.getElementById('assignmentSelectTeacher');
+            const addAssignmentTeacherBtn = document.getElementById('addAssignmentTeacherBtn');
+            const studentTableTeacher = document.getElementById('studentTableTeacher');
+            const currentAssignmentHeaderTeacher = document.getElementById('currentAssignmentHeaderTeacher');
+            const teacherAddStudentBtn = document.getElementById('teacherAddStudentBtn');
+            const teacherNewName = document.getElementById('teacherNewName');
+            const teacherNewId = document.getElementById('teacherNewId');
+            const teacherNewPwd = document.getElementById('teacherNewPwd');
+            const teacherLogTitle = document.getElementById('teacherLogTitle');
+            const teacherLogContent = document.getElementById('teacherLogContent');
+            const teacherLogAuthor = document.getElementById('teacherLogAuthor');
+            const teacherAddLogBtn = document.getElementById('teacherAddLogBtn');
+            const teacherLogList = document.getElementById('teacherLogList');
+            const quickStats = document.getElementById('quickStats');
+
+            // ---------- 角色切换 ----------
+            function setRole(role) {
+                currentRole = role;
+                if (role === 'student') {
+                    studentPanel.classList.remove('hidden');
+                    teacherPanel.classList.add('hidden');
+                    switchToStudent.classList.add('bg-white', 'shadow-sm', 'text-blue-700');
+                    switchToTeacher.classList.remove('bg-white', 'shadow-sm', 'text-blue-700');
+                    switchToTeacher.classList.add('text-gray-600');
+                    switchToStudent.classList.remove('text-gray-600');
+                    renderStudentLoginOptions();
+                    if (currentStudentId && students.find(s => s.id === currentStudentId)) {
+                        showStudentPanelAfterLogin(currentStudentId);
+                    } else {
+                        loggedStudentCard.classList.add('hidden');
+                        studentAssignmentPanel.classList.add('hidden');
+                    }
+                } else {
+                    studentPanel.classList.add('hidden');
+                    teacherPanel.classList.remove('hidden');
+                    switchToTeacher.classList.add('bg-white', 'shadow-sm', 'text-blue-700');
+                    switchToStudent.classList.remove('bg-white', 'shadow-sm', 'text-blue-700');
+                    switchToStudent.classList.add('text-gray-600');
+                    switchToTeacher.classList.remove('text-gray-600');
+                    renderTeacherUI();
+                }
+                saveAll();
+            }
+
+            switchToStudent.addEventListener('click', () => setRole('student'));
+            switchToTeacher.addEventListener('click', () => setRole('teacher'));
+
+            // ---------- 学生端功能 ----------
+            function renderStudentLoginOptions() {
+                let html = '<option value="">-- 请选择 --</option>';
+                students.forEach(s => { html += `<option value="${s.id}">${s.name} (${s.id})</option>`; });
+                studentLoginSelect.innerHTML = html;
+            }
+
+            function showStudentPanelAfterLogin(sid) {
+                const student = students.find(s => s.id === sid);
+                if (!student) return;
+                loggedStudentName.innerText = student.name;
+                loggedStudentIdSpan.innerText = `学号: ${student.id}`;
+                loggedStudentCard.classList.remove('hidden');
+                studentAssignmentPanel.classList.remove('hidden');
+                studentWelcomeMsg.innerText = `${student.name} 同学，你好`;
+                renderStudentAssignments(student);
+                renderStudentSubmissions(sid);
+            }
+
+            function renderStudentAssignments(student) {
+                let html = '';
+                assignments.forEach(a => {
+                    const status = student.status[a.id] || 'pending';
+                    const statusText = status === 'submitted' ? '✅ 已提交' : '⏳ 未提交';
+                    const statusClass = status === 'submitted' ? 'text-green-700 bg-green-100' : 'text-gray-600 bg-gray-100';
+                    const date = a.createDate ? new Date(a.createDate).toLocaleDateString() : '近日';
+                    html += `<tr>
+                        <td class="py-3 px-4">${a.name}</td>
+                        <td class="py-3 px-4">${date}</td>
+                        <td class="py-3 px-4 text-center"><span class="px-2 py-1 rounded-full text-xs font-medium ${statusClass}">${statusText}</span></td>
+                        <td class="py-3 px-4 text-center">
+                            ${status === 'submitted' ? '<span class="text-gray-400 text-xs"><i class="fas fa-check"></i> 已提交</span>' : 
+                            `<button class="submit-homework bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-1 rounded-full" data-asst-id="${a.id}"><i class="fas fa-upload"></i> 提交作业</button>`}
+                        </td>
+                    </tr>`;
+                });
+                studentAssignmentTable.innerHTML = html || '<tr><td colspan="4" class="text-center py-4 text-gray-400">暂无作业</td></tr>';
+            }
+
+            function renderStudentSubmissions(sid) {
+                const subs = submissions.filter(s => s.studentId === sid).sort((a,b) => b.submitTime - a.submitTime).slice(0,5);
+                if (!subs.length) { studentSubmissionHistory.innerHTML = '<p class="text-gray-400">暂无提交记录</p>'; return; }
+                let html = '';
+                subs.forEach(sub => {
+                    const asst = assignments.find(a => a.id === sub.assignmentId);
+                    const name = asst ? asst.name : '未知';
+                    html += `<div class="border-l-2 border-green-300 pl-2 text-xs"><span class="font-medium">${name}</span> 提交于 ${new Date(sub.submitTime).toLocaleString()}</div>`;
+                });
+                studentSubmissionHistory.innerHTML = html;
+            }
+
+            // 学生登录
+            studentLoginBtn.addEventListener('click', function() {
+                const sid = studentLoginSelect.value;
+                const pwd = studentPassword.value.trim();
+                if (!sid || !pwd) { studentLoginMessage.innerText = '请选择姓名并输入密码'; return; }
+                const student = students.find(s => s.id === sid);
+                if (!student || student.password !== pwd) { studentLoginMessage.innerText = '密码错误 (默认123456)'; return; }
+                studentLoginMessage.innerText = '';
+                currentStudentId = sid;
+                saveAll();
+                showStudentPanelAfterLogin(sid);
+            });
+
+            // 学生提交作业 (事件代理)
+            studentAssignmentTable.addEventListener('click', function(e) {
+                const btn = e.target.closest('.submit-homework');
+                if (!btn || !currentStudentId) return;
+                const asstId = btn.getAttribute('data-asst-id');
+                const student = students.find(s => s.id === currentStudentId);
+                if (!student) return;
+                student.status[asstId] = 'submitted';
+                submissions.push({ studentId: currentStudentId, assignmentId: asstId, submitTime: Date.now(), note: '学生提交' });
+                saveAll();
+                renderStudentAssignments(student);
+                renderStudentSubmissions(currentStudentId);
+            });
+
+            studentLogoutBtn.addEventListener('click', function() {
+                currentStudentId = '';
+                loggedStudentCard.classList.add('hidden');
+                studentAssignmentPanel.classList.add('hidden');
+                studentPassword.value = '';
+                studentLoginSelect.value = '';
+                saveAll();
+            });
+
+            // ---------- 教师端功能 ----------
+            function renderTeacherUI() {
+                // 作业下拉框
+                let opt = '';
+                assignments.forEach((a, idx) => { opt += `<option value="${idx}" ${idx === teacherAsstIndex ? 'selected' : ''}>${a.name}</option>`; });
+                assignmentSelectTeacher.innerHTML = opt || '<option>暂无作业</option>';
+                if (assignments.length > 0) {
+                    currentAssignmentHeaderTeacher.innerText = `作业：${assignments[teacherAsstIndex].name}`;
+                } else {
+                    currentAssignmentHeaderTeacher.innerText = '作业状态';
+                }
+
+                // 学生表格
+                if (assignments.length === 0) {
+                    studentTableTeacher.innerHTML = '<tr><td colspan="5" class="text-center py-4">请先添加作业</td></tr>';
+                } else {
+                    const asstId = assignments[teacherAsstIndex].id;
+                    let rows = '';
+                    students.forEach((s, idx) => {
+                        const status = s.status[asstId] || 'pending';
+                        const statusText = status === 'submitted' ? '已提交' : '未提交';
+                        const statusClass = status === 'submitted' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600';
+                        rows += `<tr>
+                            <td class="py-2 px-3">${s.id}</td>
+                            <td class="py-2 px-3 font-medium">${s.name}</td>
+                            <td class="py-2 px-3">
+                                <span class="inline-block bg-gray-50 px-2 py-0.5 rounded text-xs border cursor-pointer hover:bg-yellow-100" 
+                                      ondblclick="editPassword('${s.id}')">
+                                    <i class="fas fa-key"></i> ${s.password}
+                                </span>
+                            </td>
+                            <td class="py-2 px-3 text-center">
+                                <span class="px-2 py-1 rounded-full text-xs font-medium cursor-pointer ${statusClass} status-badge" 
+                                      data-student-idx="${idx}" data-asst-id="${asstId}" data-current-status="${status}">
+                                    ${statusText}
+                                </span>
+                            </td>
+                            <td class="py-2 px-3 text-center">
+                                <button class="text-red-500 hover:text-red-700 delete-student-teacher" data-student-idx="${idx}"><i class="fas fa-trash-alt"></i></button>
+                            </td>
+                        </tr>`;
+                    });
+                    studentTableTeacher.innerHTML = rows;
+                }
+
+                // 日志
+                let logHtml = '';
+                [...logs].sort((a,b) => b.timestamp - a.timestamp).slice(0,8).forEach(log => {
+                    logHtml += `<div class="border-l-2 border-amber-300 pl-3 py-1 text-sm"><span class="font-medium">${log.title}</span> <span class="text-xs text-gray-400">${new Date(log.timestamp).toLocaleDateString()}</span><br>${log.content} <span class="text-xs text-gray-400">- ${log.author}</span></div>`;
+                });
+                teacherLogList.innerHTML = logHtml || '<p class="text-gray-400">暂无日志</p>';
+
+                // 统计
+                if (assignments.length) {
+                    const asstId = assignments[teacherAsstIndex].id;
+                    const total = students.length;
+                    const sub = students.filter(s => (s.status[asstId] === 'submitted')).length;
+                    quickStats.innerText = `「${assignments[teacherAsstIndex].name}」 已提交: ${sub}/${total}`;
+                } else {
+                    quickStats.innerText = '暂无作业';
+                }
+            }
+
+            // 全局修改密码函数
+            window.editPassword = function(studentId) {
+                const student = students.find(s => s.id === studentId);
+                if (!student) return;
+                const newPwd = prompt(`修改 ${student.name} 的密码`, student.password);
+                if (newPwd !== null) {
+                    student.password = newPwd.trim() || '123456';
+                    saveAll();
+                    renderTeacherUI();
+                }
+            };
+
+            // 教师端事件绑定
+            assignmentSelectTeacher.addEventListener('change', function(e) {
+                teacherAsstIndex = parseInt(e.target.value, 10);
+                saveAll();
+                renderTeacherUI();
+            });
+
+            addAssignmentTeacherBtn.addEventListener('click', function() {
+                const name = prompt('新作业名称', '物理实验');
+                if (!name) return;
+                assignments.push({ id: 'asst_'+Date.now(), name: name, createDate: Date.now() });
+                ensureConsistency();
+                teacherAsstIndex = assignments.length - 1;
+                saveAll();
+                renderTeacherUI();
+            });
+
+            teacherAddStudentBtn.addEventListener('click', function() {
+                const name = teacherNewName.value.trim();
+                const id = teacherNewId.value.trim();
+                const pwd = teacherNewPwd.value.trim() || '123456';
+                if (!name || !id) { alert('请填写姓名和学号'); return; }
+                if (students.some(s => s.id === id)) { alert('学号重复'); return; }
+                const status = {};
+                assignments.forEach(a => status[a.id] = 'pending');
+                students.push({ id, name, password: pwd, status });
+                teacherNewName.value = ''; teacherNewId.value = ''; teacherNewPwd.value = '123456';
+                saveAll();
+                renderTeacherUI();
+            });
+
+            // 教师切换状态 (点击状态badge)
+            studentTableTeacher.addEventListener('click', function(e) {
+                const badge = e.target.closest('.status-badge');
+                if (!badge) return;
+                const studentIdx = badge.getAttribute('data-student-idx');
+                const asstId = badge.getAttribute('data-asst-id');
+                const current = badge.getAttribute('data-current-status');
+                if (studentIdx === null || !asstId) return;
+                const newStatus = current === 'submitted' ? 'pending' : 'submitted';
+                students[studentIdx].status[asstId] = newStatus;
+                saveAll();
+                renderTeacherUI();
+            });
+
+            // 删除学生
+            studentTableTeacher.addEventListener('click', function(e) {
+                const del = e.target.closest('.delete-student-teacher');
+                if (!del) return;
+                const idx = del.getAttribute('data-student-idx');
+                if (idx !== null && confirm('删除该学生？')) {
+                    students.splice(idx, 1);
+                    saveAll();
+                    renderTeacherUI();
+                }
+            });
+
+            // 发布日志
+            teacherAddLogBtn.addEventListener('click', function() {
+                const title = teacherLogTitle.value.trim();
+                const content = teacherLogContent.value.trim();
+                const author = teacherLogAuthor.value.trim() || '班主任';
+                if (!title || !content) { alert('请填写标题和内容'); return; }
+                logs.push({ id: 'log_'+Date.now(), title, content, author, timestamp: Date.now() });
+                teacherLogTitle.value = ''; teacherLogContent.value = '';
+                saveAll();
+                renderTeacherUI();
+            });
+
+            // 初始化角色显示
+            setRole(currentRole);
+        })();
+    </script>
+</body>
+</html>
